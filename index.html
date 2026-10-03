@@ -93,8 +93,6 @@
     let category = new URLSearchParams(location.search).get("category");
     if (!CATEGORIES.some((item) => item.id === category)) category = "mixed";
     let questionCount = 10;
-    let showChinese = localStorage.getItem("ielts-vocab-show-chinese") !== "false";
-    let showAudio = localStorage.getItem("ielts-vocab-show-audio") !== "false";
     let session = null;
     let selected = "";
     let submitted = false;
@@ -130,7 +128,7 @@
       return "中文释义待补充";
     }
     function speak(text) {
-      if (!showAudio || !("speechSynthesis" in window)) return;
+      if (!("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US"; utterance.rate = 0.85; window.speechSynthesis.speak(utterance);
@@ -194,7 +192,6 @@
                 <strong>${item.label}</strong><span>${counts[item.id]} 题</span><small>${item.note}</small>
               </button>`).join("")}</div>
             <div class="controls"><label for="question-count">本轮题量</label><select id="question-count">${[5,10,20,50].map((value) => `<option value="${value}" ${questionCount === value ? "selected" : ""}>${value} 题</option>`).join("")}</select></div>
-            <div class="settings"><strong>显示设置</strong><label><input type="checkbox" id="show-chinese" ${showChinese ? "checked" : ""}> 显示单词下方中文</label><label><input type="checkbox" id="show-audio" ${showAudio ? "checked" : ""}> 显示发音按钮</label></div>
             <div class="summary"><span>已练过 ${state.attempted.length} / ${currentPool.length}</span><span>错题 ${state.wrong.length} 题</span></div>
             <button class="primary" id="start" style="margin-top:20px">开始训练</button>
           </section>`;
@@ -204,8 +201,6 @@
           render();
         });
         document.querySelector("#question-count").onchange = (event) => { questionCount = Number(event.target.value); };
-        document.querySelector("#show-chinese").onchange = (event) => { showChinese = event.target.checked; localStorage.setItem("ielts-vocab-show-chinese", String(showChinese)); };
-        document.querySelector("#show-audio").onchange = (event) => { showAudio = event.target.checked; localStorage.setItem("ielts-vocab-show-audio", String(showAudio)); };
         document.querySelector("#start").onclick = start;
         return;
       }
@@ -215,12 +210,12 @@
       app.innerHTML = `
         <section class="panel">
           <div class="progress"><span>${CATEGORIES.find((item) => item.id === category).label} · 538</span><span>第 ${session.index + 1} / ${session.questions.length} 题</span></div>
-          <div class="question-head"><p class="eyebrow" style="color:#0284c7">题目用词</p><h2 class="word-line">${current.word.word} ${showAudio ? `<button class="audio" data-speak="${current.word.word}" aria-label="播放单词读音">🔊</button>` : ""}</h2>${showChinese ? `<p>${current.word.pos} · ${current.word.meaning}</p>` : ""}</div>
+          <div class="question-head"><p class="eyebrow" style="color:#0284c7">题目用词</p><h2 class="word-line">${current.word.word} <button class="audio" data-speak="${current.word.word}" aria-label="播放单词读音">🔊</button></h2>${submitted ? `<p>${current.word.pos} · ${current.word.meaning}</p>` : ""}</div>
           <div class="prompt">Which phrase is closest in meaning to <strong>${current.word.word}</strong> in an IELTS reading passage?</div>
           <div class="options">${current.options.map((option, index) => {
             const optionCorrect = option === current.correct;
             const className = submitted ? (optionCorrect ? "correct" : selected === option ? "wrong" : "") : selected === option ? "selected" : "";
-            return `<label class="option ${className}"><input type="radio" name="answer" value="${option}" ${selected === option ? "checked" : ""} ${submitted ? "disabled" : ""}><span class="letter">${String.fromCharCode(65 + index)}</span><span class="option-word">${option} ${showAudio ? `<button type="button" class="audio" data-speak="${option}" aria-label="播放 ${option} 的读音">🔊</button>` : ""}<small>（中文：${optionMeaning(option, current.word)}）</small></span></label>`;
+            return `<label class="option ${className}"><input type="radio" name="answer" value="${option}" ${selected === option ? "checked" : ""} ${submitted ? "disabled" : ""}><span class="letter">${String.fromCharCode(65 + index)}</span><span class="option-word">${option} <button type="button" class="audio" data-speak="${option}" aria-label="播放 ${option} 的读音">🔊</button>${submitted ? `<small>（${optionMeaning(option, current.word)}）</small>` : ""}</span></label>`;
           }).join("")}</div>
           ${submitted ? `<div class="feedback ${isCorrect ? "correct" : "wrong"}"><strong>${isCorrect ? "✓ 正确" : "✗ 再看一眼"}</strong><p>正确答案：<b>${current.correct}</b></p><p>命题替换：${current.word.word} → ${current.word.replacements.join(" / ")}</p><button class="primary" id="next">${session.index === session.questions.length - 1 ? "查看结果" : "下一题"}</button></div>` : `<button class="primary" id="submit" ${selected ? "" : "disabled"}>提交答案</button>`}
         </section><div class="score">本轮当前正确 ${answers.filter((item) => item.correct).length} 题</div>`;
