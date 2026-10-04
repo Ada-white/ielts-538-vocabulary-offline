@@ -98,6 +98,7 @@
     let questionCount = 10;
     let showChinese = readStorage("ielts-vocab-show-chinese") !== "false";
     let showAudio = readStorage("ielts-vocab-show-audio") !== "false";
+    let listeningMode = readStorage("ielts-vocab-listening-mode") === "true";
     let session = null;
     let selected = "";
     let submitted = false;
@@ -127,7 +128,7 @@
     function questionFor(word, allWords) {
       const correct = word.correct || word.replacements[0];
       const translated = [...new Set(allWords.flatMap((item) => item.replacements)
-        .filter((item) => item !== correct && !word.replacements.includes(item) && allWords.some((entry) => entry.replacementMeanings?.[item] && entry.replacementMeanings[item] !== "词库未收录")))];
+        .filter((item) => item !== correct && item.toLowerCase() !== word.word.toLowerCase() && !word.replacements.includes(item) && allWords.some((entry) => entry.replacementMeanings?.[item] && entry.replacementMeanings[item] !== "词库未收录")))];
       const distractors = shuffle(translated).slice(0, 3);
       return { word, correct, options: shuffle([correct, ...distractors]) };
     }
@@ -140,7 +141,7 @@
       return "中文释义待补充";
     }
     function speak(text) {
-      if (!showAudio || !("speechSynthesis" in window)) return;
+      if ((!showAudio && !listeningMode) || !("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "en-US"; utterance.rate = 0.85; window.speechSynthesis.speak(utterance);
@@ -149,9 +150,12 @@
       if (name === "chinese") {
         showChinese = value;
         writeStorage("ielts-vocab-show-chinese", value);
-      } else {
+      } else if (name === "audio") {
         showAudio = value;
         writeStorage("ielts-vocab-show-audio", value);
+      } else {
+        listeningMode = value;
+        writeStorage("ielts-vocab-listening-mode", value);
       }
       render();
     }
@@ -218,7 +222,7 @@
                 <strong>${item.label}（一共 ${counts[item.id]} 词）</strong><span>${item.id === "type1" ? "150 道练习题" : counts[item.id] + " 道练习题"}</span>
               </button>`).join("")}</div>
             <div class="controls"><label for="question-count">本轮题量</label><select id="question-count">${[5,10,20,50].map((value) => `<option value="${value}" ${questionCount === value ? "selected" : ""}>${value} 题</option>`).join("")}</select></div>
-            <div class="settings"><strong>显示设置</strong><label><input type="checkbox" id="show-chinese" ${showChinese ? "checked" : ""}> 有中文</label><label><input type="checkbox" id="show-audio" ${showAudio ? "checked" : ""}> 有声音按键</label></div>
+            <div class="settings"><strong>显示设置</strong><label><input type="checkbox" id="show-chinese" ${showChinese ? "checked" : ""}> 有中文</label><label><input type="checkbox" id="show-audio" ${showAudio ? "checked" : ""}> 有声音按键</label><label><input type="checkbox" id="listening-mode" ${listeningMode ? "checked" : ""}> 听力模式（答题前隐藏单词）</label></div>
             <div class="summary"><span>已练过 ${currentPool.filter((word) => state.attempted.includes(word.id)).length} / ${currentPool.length} 题</span><span>错题 ${currentPool.filter((word) => state.wrong.includes(word.id)).length} 题</span></div>
             <div class="reset-row"><button class="secondary" id="reset-progress">重置进度</button><span>清空已做题进度，保留错题</span></div>
             <button class="primary" id="start" style="margin-top:20px">开始训练</button>
@@ -231,6 +235,7 @@
         document.querySelector("#question-count").onchange = (event) => { questionCount = Number(event.target.value); };
         document.querySelector("#show-chinese").onchange = (event) => updateSetting("chinese", event.target.checked);
         document.querySelector("#show-audio").onchange = (event) => updateSetting("audio", event.target.checked);
+        document.querySelector("#listening-mode").onchange = (event) => updateSetting("listening", event.target.checked);
         document.querySelector("#reset-progress").onclick = resetProgress;
         document.querySelector("#start").onclick = start;
         return;
@@ -238,11 +243,17 @@
 
       const current = session.questions[session.index];
       const isCorrect = submitted && selected === current.correct;
+      const wordHeading = listeningMode && !submitted
+        ? `<div class="word-line"><button class="audio" data-speak="${current.word.word}" aria-label="播放题目单词">🔊</button></div>`
+        : `<h2 class="word-line">${current.word.word} ${showAudio ? `<button class="audio" data-speak="${current.word.word}" aria-label="播放 ${current.word.word} 的读音">🔊</button>` : ""}</h2>`;
+      const questionPrompt = listeningMode
+        ? "Listen to the word and choose the closest phrase in meaning."
+        : `Which phrase is closest in meaning to <strong>${current.word.word}</strong> in an IELTS reading passage?`;
       app.innerHTML = `
         <section class="panel">
           <div class="progress"><span>${CATEGORIES.find((item) => item.id === category).label} · 538</span><span>第 ${session.index + 1} / ${session.questions.length} 题</span></div>
-          <div class="question-head"><p class="eyebrow" style="color:#0284c7">题目用词</p><h2 class="word-line">${current.word.word} ${showAudio ? `<button class="audio" data-speak="${current.word.word}" aria-label="播放单词读音">🔊</button>` : ""}</h2>${submitted && showChinese ? `<p>${current.word.pos} · ${current.word.meaning}</p>` : ""}</div>
-          <div class="prompt">Which phrase is closest in meaning to <strong>${current.word.word}</strong> in an IELTS reading passage?</div>
+          <div class="question-head"><p class="eyebrow" style="color:#0284c7">题目用词</p>${wordHeading}${submitted && (showChinese || listeningMode) ? `<p>${current.word.pos} · ${current.word.meaning}</p>` : ""}</div>
+          <div class="prompt">${questionPrompt}</div>
           <div class="options">${current.options.map((option, index) => {
             const optionCorrect = option === current.correct;
             const className = submitted ? (optionCorrect ? "correct" : selected === option ? "wrong" : "") : selected === option ? "selected" : "";
