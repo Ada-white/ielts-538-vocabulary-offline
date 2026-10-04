@@ -218,7 +218,7 @@
                 <strong>${item.label}（一共 ${counts[item.id]} 词）</strong><span>${item.id === "type1" ? "150 道练习题" : counts[item.id] + " 道练习题"}</span>
               </button>`).join("")}</div>
             <div class="controls"><label for="question-count">本轮题量</label><select id="question-count">${[5,10,20,50].map((value) => `<option value="${value}" ${questionCount === value ? "selected" : ""}>${value} 题</option>`).join("")}</select></div>
-            <div class="settings"><strong>显示设置</strong><label><input type="checkbox" id="show-chinese" ${showChinese ? "checked" : ""}> 是否有中文（提交后显示）</label><label><input type="checkbox" id="show-audio" ${showAudio ? "checked" : ""}> 是否有声音按钮</label></div>
+            <div class="settings"><strong>显示设置</strong><label><input type="checkbox" id="show-chinese" ${showChinese ? "checked" : ""}> 有中文</label><label><input type="checkbox" id="show-audio" ${showAudio ? "checked" : ""}> 有声音按键</label></div>
             <div class="summary"><span>已练过 ${currentPool.filter((word) => state.attempted.includes(word.id)).length} / ${currentPool.length} 题</span><span>错题 ${currentPool.filter((word) => state.wrong.includes(word.id)).length} 题</span></div>
             <div class="reset-row"><button class="secondary" id="reset-progress">重置进度</button><span>清空已做题进度，保留错题</span></div>
             <button class="primary" id="start" style="margin-top:20px">开始训练</button>
