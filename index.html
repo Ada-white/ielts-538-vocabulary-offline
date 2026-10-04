@@ -113,6 +113,8 @@
       return { word, correct, options: shuffle([correct, ...distractors]) };
     }
     function optionMeaning(option, word) {
+      const contextualMeaning = word.replacementMeanings?.[option];
+      if (contextualMeaning && contextualMeaning !== "词库未收录") return contextualMeaning;
       const entry = WORDS.find((item) => item.replacementMeanings?.[option] && item.replacementMeanings[option] !== "词库未收录");
       if (entry) return entry.replacementMeanings[option];
       if (word.replacements.includes(option)) return word.meaning;
