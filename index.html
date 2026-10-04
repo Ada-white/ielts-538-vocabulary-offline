@@ -36,6 +36,7 @@
     .secondary { padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #334155; font-weight: 700; cursor: pointer; }
     .secondary:hover { background: #f8fafc; }
     .summary { color: #64748b; font-size: 13px; }
+    .reset-row { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; color: #64748b; font-size: 13px; }
     .progress { padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 13px; }
     .question-head { padding: 28px 0 18px; }
     .question-head h2 { margin-top: 5px; color: #0f172a; }
@@ -109,6 +110,12 @@
       catch { return { attempted: [], wrong: [] }; }
     }
     function saveProgress(value) { writeStorage(STORAGE_KEY, JSON.stringify(value)); }
+    function resetProgress() {
+      const old = progress();
+      old.attempted = [];
+      saveProgress(old);
+      render();
+    }
     function selectedWords() {
       const base = category === "mixed" ? WORDS : WORDS.filter((word) => word.category === category);
       if (category !== "type1") return base;
@@ -213,6 +220,7 @@
             <div class="controls"><label for="question-count">本轮题量</label><select id="question-count">${[5,10,20,50].map((value) => `<option value="${value}" ${questionCount === value ? "selected" : ""}>${value} 题</option>`).join("")}</select></div>
             <div class="settings"><strong>显示设置</strong><label><input type="checkbox" id="show-chinese" ${showChinese ? "checked" : ""}> 是否有中文（提交后显示）</label><label><input type="checkbox" id="show-audio" ${showAudio ? "checked" : ""}> 是否有声音按钮</label></div>
             <div class="summary"><span>已练过 ${currentPool.filter((word) => state.attempted.includes(word.id)).length} / ${currentPool.length} 题</span><span>错题 ${currentPool.filter((word) => state.wrong.includes(word.id)).length} 题</span></div>
+            <div class="reset-row"><button class="secondary" id="reset-progress">重置进度</button><span>清空已做题进度，保留错题</span></div>
             <button class="primary" id="start" style="margin-top:20px">开始训练</button>
           </section>`;
         document.querySelectorAll("[data-category]").forEach((button) => button.onclick = () => {
@@ -223,6 +231,7 @@
         document.querySelector("#question-count").onchange = (event) => { questionCount = Number(event.target.value); };
         document.querySelector("#show-chinese").onchange = (event) => updateSetting("chinese", event.target.checked);
         document.querySelector("#show-audio").onchange = (event) => updateSetting("audio", event.target.checked);
+        document.querySelector("#reset-progress").onclick = resetProgress;
         document.querySelector("#start").onclick = start;
         return;
       }
