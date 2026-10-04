@@ -32,6 +32,9 @@
     .primary { padding: 11px 18px; border: 0; border-radius: 8px; background: #0f172a; color: white; font-weight: 700; cursor: pointer; }
     .primary:hover { background: #334155; }
     .primary:disabled { cursor: not-allowed; opacity: .45; }
+    .result-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    .secondary { padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #334155; font-weight: 700; cursor: pointer; }
+    .secondary:hover { background: #f8fafc; }
     .summary { color: #64748b; font-size: 13px; }
     .progress { padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 13px; }
     .question-head { padding: 28px 0 18px; }
@@ -193,9 +196,10 @@
               <div class="category"><strong>${result.correct}</strong><span>答对</span></div>
               <div class="category"><strong>${wrong}</strong><span>答错</span></div>
             </div>
-            <button class="primary" id="restart">再练一轮</button>
+            <div class="result-actions"><button class="primary" id="restart">再练一轮</button><button class="secondary" id="home">返回主页</button></div>
           </section>`;
         document.querySelector("#restart").onclick = start;
+        document.querySelector("#home").onclick = () => { result = null; render(); };
         return;
       }
       if (!session) {
